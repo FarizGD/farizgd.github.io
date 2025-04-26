@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FarizGD's Domain Zone</title>
+    <style>
+        :root {
+            /* VS Code Dark Theme Colors */
+            --vscode-bg: #1e1e1e;
+            --vscode-sidebar-bg: #252526;
+            --vscode-fg: #d4d4d4;
+            --vscode-accent: #007acc;
+            --vscode-border: #2e2e2e;
+            --vscode-list-active: #094771;
+            --vscode-list-hover: #2a2d2e;
+            --vscode-scrollbar: #2e2e2e;
+            --vscode-scrollbar-thumb: #6a6a6a;
+            --vscode-button-bg: #0e639c;
+            --vscode-button-hover: #1177bb;
+            --vscode-input-bg: #3c3c3c;
+            --vscode-tab-active: #1e1e1e;
+            --vscode-tab-inactive: #2d2d2d;
+            
+            /* Custom accent colors */
+            --gd-yellow: #f7d51d;
+            --mc-green: #5db559;
+            --limbus-red: #e74c3c;
+        }
+
+        body {
+            font-family: 'Arial', 'Arial', monospace;
+            margin: 0;
+            background-color: var(--vscode-bg);
+            color: var(--vscode-fg);
+            display: flex;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background-color: var(--vscode-sidebar-bg);
+            border-right: 1px solid var(--vscode-border);
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+        }
+
+        .sidebar-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--vscode-border);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+
+        .sidebar-header::before {
+            content: "🗂";
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .sidebar-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-item:hover {
+            background-color: var(--vscode-list-hover);
+        }
+
+        .sidebar-item.active {
+            background-color: var(--vscode-list-active);
+            color: white;
+            border-left: 3px solid var(--vscode-accent);
+        }
+
+        .sidebar-item::before {
+            content: "📄";
+            margin-right: 10px;
+            font-size: 0.9em;
+        }
+
+        /* Content Area */
+        .content {
+            flex-grow: 1;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .section {
+            padding: 25px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        h1, h2 {
+            color: var(--vscode-fg);
+            margin-top: 0;
+        }
+
+        h1 {
+            border-bottom: 1px solid var(--vscode-border);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        h2 {
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            color: var(--vscode-accent);
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        /* Skills List */
+        .skills-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .skill {
+            background-color: var(--vscode-input-bg);
+            padding: 8px 15px;
+            border-radius: 3px;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+        }
+
+        .skill::before {
+            content: "✓";
+            color: var(--vscode-accent);
+            margin-right: 8px;
+            font-weight: bold;
+        }
+
+        /* Games List */
+        .games-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        .game-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: var(--vscode-input-bg);
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .game-item:hover {
+            border-left: 3px solid var(--vscode-accent);
+        }
+
+        .game-title {
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .game-title.gd::before {
+            content: "⭐";
+            color: var(--gd-yellow);
+            margin-right: 8px;
+        }
+
+        .game-title.mc::before {
+            content: "⛏";
+            color: var(--mc-green);
+            margin-right: 8px;
+        }
+
+        .game-title.limbus::before {
+            content: "🔴";
+            color: var(--limbus-red);
+            margin-right: 8px;
+        }
+
+        /* Social Links */
+        .social-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .social-link {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 15px;
+            background-color: var(--vscode-button-bg);
+            color: white;
+            text-decoration: none;
+            border-radius: 3px;
+            transition: all 0.2s ease;
+        }
+
+        .social-link:hover {
+            background-color: var(--vscode-button-hover);
+            transform: translateY(-2px);
+        }
+
+        .social-link::before {
+            margin-right: 8px;
+        }
+
+        .social-link.github::before {
+            content: "🐙";
+        }
+
+        .social-link.discord::before {
+            content: "💬";
+        }
+
+        .social-link.youtube::before {
+            content: "📺";
+        }
+
+        .social-link.whatsapp::before {
+            content: "📱";
+        }
+
+        .social-link.tiktok::before {
+            content: "🎵";
+        }
+
+        /* Status Bar */
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--vscode-sidebar-bg);
+            border-top: 1px solid var(--vscode-border);
+            padding: 5px 10px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+        }
+
+        .status-bar-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .status-bar-item::before {
+            margin-right: 5px;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--vscode-scrollbar);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--vscode-scrollbar-thumb);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #808080;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                flex-direction: row;
+                overflow-x: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--vscode-border);
+            }
+            
+            .sidebar-header {
+                display: none;
+            }
+            
+            .sidebar-item {
+                white-space: nowrap;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+            }
+            
+            .sidebar-item.active {
+                border-left: none;
+                border-bottom: 3px solid var(--vscode-accent);
+            }
+            
+            .content {
+                padding-bottom: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">EXPLORER</div>
+        <div class="sidebar-item active" data-section="about">about_me.md</div>
+        <div class="sidebar-item" data-section="tech">farizgd.js</div>
+        <div class="sidebar-item" data-section="gaming">gaming.config</div>
+        <div class="sidebar-item" data-section="coding">skills.json</div>
+        <div class="sidebar-item" data-section="social">contact.sh</div>
+    </div>
+
+    <div class="content">
+        <section id="about" class="section active">
+            <h1>about_me.md</h1>
+            <img src="https://files.catbox.moe/tvzcdy.jpeg" width="348" height="192">
+            <p>I'm FarizGD (Muhammad Fariz Putra) and i'm a Geometry Dash Player. also i love doing random things.</p>
+            <p>:3 (also Hayase Yuuka is my wife)</p>
+            
+            <h2>Quick Overview</h2>
+            <div class="skills-container">
+                <div class="skill">Minecraft Server Management</div>
+                <div class="skill">Gamer</div>
+                <div class="skill">Pterodactyl Installing</div>
+                <div class="skill">Minecraft Server Helper</div>
+            </div>
+        </section>
+
+        <section id="tech" class="section">
+            <h1>farizgd.js</h1>
+            <img src="https://files.catbox.moe/5ka778.gif" width="348" height="192">
+            <p>I'm currently still learning. but at least i can :</p>
+            
+            <h2>Pterodactyl Panel</h2>
+            <p>I can install, configure, and manage Pterodactyl, the open-source game server management panel. This includes:</p>
+            <ul class="games-list">
+                <li>Full installation and setup on fresh servers</li>
+                <li>Configuration of game servers and environments</li>
+                <li>Troubleshooting and maintenance (kinda)</li>
+            </ul>
+            
+            <h2>Other Server Skills</h2>
+            <div class="skills-container">
+                <div class="skill">Linuxing Myself</div>
+                <div class="skill">Running WhatsApp bot</div>
+                <div class="skill">Web Hosting (Kinda)</div>
+                <div class="skill">Coding for myself</div>
+            </div>
+        </section>
+
+        <section id="gaming" class="section">
+            <h1>gaming.config</h1>
+            <img src="https://files.catbox.moe/618i7j.gif" width="348" height="192">
+            <p>Games that i play:</p>
+            
+            <div class="games-list">
+                <div class="game-item">
+                    <div class="game-title gd">Geometry Dash</div>
+                    <p>The rhythm-based platformer that challenges both reflexes and creativity. I enjoy creating and playing custom levels.</p>
+                </div>
+                
+                <div class="game-item">
+                    <div class="game-title mc">Minecraft</div>
+                    <p>From survival gameplay to fucking other people's server with wurst client. this game is the best.</p>
+                </div>
+                
+                <div class="game-item">
+                    <div class="game-title limbus">Limbus Company</div>
+                    <p>Why not.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="coding" class="section">
+            <h1>skills.json</h1>
+            <img src="https://files.catbox.moe/3zdn8o.gif" width="348" height="192">
+            <p>Here are the programming languages that i kinda know:</p>
+            
+            <h2>Primary Languages</h2>
+            <div class="skills-container">
+                <div class="skill">Node.js</div>
+                <div class="skill">Python</div>
+                <div class="skill">VB.NET</div>
+                <div class="skill">Batch (CMD)</div>
+            </div>
+            
+            <h2>Web Development</h2>
+            <div class="skills-container">
+                <div class="skill">HTML/CSS</div>
+                <div class="skill">JavaScript</div>
+            </div>
+            
+            <h2>Other Technologies</h2>
+            <div class="skills-container">
+                <div class="skill">Github</div>
+                <div class="skill">Installing mods into my games until it breaks.</div>
+            </div>
+        </section>
+
+        <section id="social" class="section">
+            <h1>contact.sh</h1>
+            <img src="https://files.catbox.moe/rsze3g.gif" width="348" height="192">
+            <p>You can find me on these platforms:</p>
+            
+            <div class="social-links">
+                <a href="https://github.com/FarizGD" class="social-link github" target="_blank">GitHub</a>
+                <a href="https://discord.gg/FarizGD" class="social-link discord" target="_blank">Discord</a>
+                <a href="https://youtube.com/@fariz-gd" class="social-link youtube" target="_blank">YouTube</a>
+                <a href="https://wa.me/6285179735436" class="social-link whatsapp" target="_blank">WhatsApp</a>
+                <a href="https://chat.whatsapp.com/KxmCBV4aoBUIQjmc48dFTv" class="social-link whatsapp" target="_blank">WhatsApp Group</a>
+                <a href="https://tiktok.com/@farizgd331" class="social-link tiktok" target="_blank">TikTok</a>
+            </div>
+            
+            <h2>Collaboration</h2>
+            <p>Just invite and contact me to see im busy or not. probably when i want to and if i can :</p>
+            <ul class="games-list">
+                <li>WhatsApp bot (node.js)</li>
+                <li>Minecraft Server</li>
+                <li>Helping with your VPS</li>
+                <li>Probably being ur friend.</li>
+            </ul>
+        </section>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-bar-item">UTF-8</div>
+        <div class="status-bar-item">JavaScript</div>
+        <div class="status-bar-item">Ln 1, Col 1</div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarItems = document.querySelectorAll('.sidebar-item');
+            const sections = document.querySelectorAll('.section');
+            
+            // Set active section
+            function setActiveSection(sectionId) {
+                sections.forEach(section => {
+                    section.classList.remove('active');
+                    if (section.id === sectionId) {
+                        section.classList.add('active');
+                    }
+                });
+                
+                sidebarItems.forEach(item => {
+                    item.classList.remove('active');
+                    if (item.getAttribute('data-section') === sectionId) {
+                        item.classList.add('active');
+                    }
+                });
+            }
+            
+            // Sidebar item click handler
+            sidebarItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const sectionId = this.getAttribute('data-section');
+                    setActiveSection(sectionId);
+                    
+                    // Update status bar
+                    updateStatusBar(sectionId);
+                });
+            });
+            
+            // Update status bar based on active section
+            function updateStatusBar(sectionId) {
+                const statusItems = document.querySelectorAll('.status-bar-item');
+                
+                switch(sectionId) {
+                    case 'about':
+                        statusItems[1].textContent = 'Markdown';
+                        break;
+                    case 'tech':
+                        statusItems[1].textContent = 'JavaScript';
+                        break;
+                    case 'gaming':
+                        statusItems[1].textContent = 'Config';
+                        break;
+                    case 'coding':
+                        statusItems[1].textContent = 'JSON';
+                        break;
+                    case 'social':
+                        statusItems[1].textContent = 'Shell Script';
+                        break;
+                }
+            }
+            
+            // Initialize status bar
+            updateStatusBar('about');
+            
+            // Simulate VS Code-like behavior
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === '1') setActiveSection('about');
+                if (e.ctrlKey && e.key === '2') setActiveSection('tech');
+                if (e.ctrlKey && e.key === '3') setActiveSection('gaming');
+                if (e.ctrlKey && e.key === '4') setActiveSection('coding');
+                if (e.ctrlKey && e.key === '5') setActiveSection('social');
+            });
+        });
+    </script>
+</body>
+</html>
