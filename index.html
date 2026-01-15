@@ -102,6 +102,18 @@ margin-right:2px;
 white-space:nowrap;
 }
 .tab.active{background:var(--editor-bg)}
+.actions{
+display:flex;
+gap:6px;
+padding-right:6px;
+}
+.actions button{
+background:#3c3c3c;
+border:none;
+color:white;
+font-size:11px;
+padding:4px 8px;
+}
 .editor-wrap{flex:1;min-height:0}
 #editor{height:100%}
 .terminal{
@@ -144,6 +156,11 @@ padding:0 10px;
 <div class="topbar">
 <div class="menu-btn" id="menu">☰</div>
 <div class="tabs" id="tabs"></div>
+<div class="actions">
+<button id="save">SAVE</button>
+<button id="load">LOAD</button>
+<button id="reset">RESET</button>
+</div>
 </div>
 
 <div class="editor-wrap">
@@ -155,7 +172,7 @@ padding:0 10px;
 <div class="status">
 <span>UTF-8</span>
 <span id="lang">PLAINTEXT</span>
-<span>Ln 1, Col 1</span>
+<span>READY</span>
 </div>
 </div>
 
@@ -275,15 +292,63 @@ t.classList.toggle("active",t.dataset.tab===path)
 })
 }
 
-const term=new Terminal({theme:{background:"#000"}})
+document.getElementById("save").onclick=()=>{
+const dump={}
+for(const k in models) dump[k]=models[k].getValue()
+localStorage.setItem("workspace",JSON.stringify(dump))
+}
+
+document.getElementById("load").onclick=()=>{
+const data=JSON.parse(localStorage.getItem("workspace")||"{}")
+for(const k in data){
+if(models[k]) models[k].setValue(data[k])
+}
+}
+
+document.getElementById("reset").onclick=()=>{
+localStorage.clear()
+location.reload()
+}
+
+const term=new Terminal({cursorBlink:true,theme:{background:"#000"}})
 term.open(document.getElementById("terminal"))
-term.writeln("VS Code Web Ready")
-term.onData(d=>{
-const cmd=d.trim()
-if(cmd==="clear"){term.clear()}
-else if(cmd.startsWith("echo")){term.writeln(cmd.slice(5))}
-else{term.writeln("unknown command")}
+let buffer=""
+term.write("> ")
+term.onData(e=>{
+if(e==="\r"){
+term.write("\r\n")
+runCmd(buffer)
+buffer=""
+term.write("> ")
+}else if(e==="\u007F"){
+if(buffer.length>0){
+buffer=buffer.slice(0,-1)
+term.write("\b \b")
+}
+}else{
+buffer+=e
+term.write(e)
+}
 })
+
+function runCmd(cmd){
+cmd=cmd.trim()
+if(cmd==="help"){
+term.writeln("help clear echo save load")
+}else if(cmd==="clear"){
+term.clear()
+}else if(cmd==="save"){
+document.getElementById("save").click()
+term.writeln("workspace saved")
+}else if(cmd==="load"){
+document.getElementById("load").click()
+term.writeln("workspace loaded")
+}else if(cmd.startsWith("echo")){
+term.writeln(cmd.slice(5))
+}else{
+term.writeln("command not found")
+}
+}
 </script>
 
 </body>
