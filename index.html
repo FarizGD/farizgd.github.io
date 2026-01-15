@@ -75,12 +75,24 @@ padding:4px 10px;
 .tabs{flex:1;display:flex;overflow-x:auto}
 .tab{padding:6px 14px;font-size:13px;background:var(--panel);margin-right:2px;white-space:nowrap;cursor:pointer}
 .tab.active{background:var(--bg)}
-.editor-area{flex:1;display:flex;min-height:0}
-.editor-wrap{flex:1;min-width:0}
+.editor-area{
+flex:1;
+display:flex;
+min-height:0;
+}
+.editor-wrap{
+flex:1 1 60%;
+min-width:0;
+}
 #editor{height:100%}
+.divider{
+width:4px;
+cursor:col-resize;
+background:var(--border);
+}
 .preview{
-width:40%;
-border-left:1px solid var(--border);
+flex:1 1 40%;
+min-width:0;
 background:white;
 }
 .preview iframe{width:100%;height:100%;border:none}
@@ -97,8 +109,9 @@ padding:0 10px;
 }
 @media(max-width:900px){
 .sidebar{position:absolute;z-index:5;height:100%}
+.editor-area{flex-direction:column}
+.divider{display:none}
 .preview{display:none}
-.editor-wrap{width:100%}
 }
 </style>
 </head>
@@ -122,7 +135,6 @@ padding:0 10px;
 <div class="topbar">
 <div class="menu-btn" id="menu">☰</div>
 <div class="filebar">
-<button id="saveFile">Save</button>
 <button id="saveWS">Save WS</button>
 <button id="loadWS">Load WS</button>
 <button id="resetWS">Reset</button>
@@ -133,6 +145,7 @@ padding:0 10px;
 
 <div class="editor-area">
 <div class="editor-wrap" id="editorWrap"><div id="editor"></div></div>
+<div class="divider" id="divider"></div>
 <div class="preview" id="preview"><iframe id="iframe"></iframe></div>
 </div>
 
@@ -150,7 +163,7 @@ padding:0 10px;
 <script>
 const FILE_TREE={
 src:{type:"folder",children:{
-"index.html":{type:"file",language:"html",content:"<!DOCTYPE html><html><body><h1>Hello Mobile Preview</h1></body></html>"},
+"index.html":{type:"file",language:"html",content:"<!DOCTYPE html><html><body><h1>Hello Preview</h1></body></html>"},
 "main.js":{type:"file",language:"javascript",content:"console.log('Hello');"}
 }},
 "skills.json":{type:"file",language:"json",content:'{"skills":["Node","Python"]}'}
@@ -165,6 +178,7 @@ const preview=document.getElementById("preview")
 const iframe=document.getElementById("iframe")
 const toggle=document.getElementById("toggleView")
 const editorWrap=document.getElementById("editorWrap")
+const divider=document.getElementById("divider")
 
 document.getElementById("menu").onclick=()=>sidebar.classList.toggle("hidden")
 
@@ -248,13 +262,15 @@ function updateView(){
 const mobile=window.innerWidth<900
 if(currentFile&&currentFile.language==="html"){
 toggle.style.display=mobile?"inline-block":"none"
-preview.style.display=mobile?(viewMode==="preview"?"block":"none"):"block"
+preview.style.display=mobile?(viewMode==="preview"?"block":"block"):"block"
 editorWrap.style.display=mobile?(viewMode==="code"?"block":"none"):"block"
+divider.style.display=mobile?"none":"block"
 iframe.srcdoc=models[currentPath].getValue()
 toggle.textContent=viewMode==="code"?"PREVIEW":"CODE"
 }else{
 toggle.style.display="none"
 preview.style.display="none"
+divider.style.display="none"
 editorWrap.style.display="block"
 }
 }
@@ -266,7 +282,6 @@ updateView()
 
 window.onresize=updateView
 
-document.getElementById("saveFile").onclick=()=>editor.getModel()?.pushStackElement()
 document.getElementById("saveWS").onclick=()=>{
 const dump={}
 for(const k in models) dump[k]=models[k].getValue()
@@ -277,6 +292,25 @@ const data=JSON.parse(localStorage.getItem("workspace")||"{}")
 for(const k in data){if(models[k]) models[k].setValue(data[k])}
 }
 document.getElementById("resetWS").onclick=()=>{localStorage.clear();location.reload()}
+
+let resizing=false
+divider.onmousedown=e=>{
+resizing=true
+document.body.style.cursor="col-resize"
+}
+window.onmouseup=()=>{
+resizing=false
+document.body.style.cursor=""
+}
+window.onmousemove=e=>{
+if(!resizing)return
+const rect=document.querySelector(".editor-area").getBoundingClientRect()
+let left=(e.clientX-rect.left)/rect.width*100
+left=Math.max(20,Math.min(80,left))
+editorWrap.style.flex=`0 0 ${left}%`
+preview.style.flex=`0 0 ${100-left}%`
+editor.layout()
+}
 
 const term=new Terminal({cursorBlink:true,theme:{background:"#000"}})
 term.open(document.getElementById("terminal"))
