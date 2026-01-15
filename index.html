@@ -11,12 +11,12 @@
 
 <style>
 :root{
---editor-bg:#1e1e1e;
---sidebar-bg:#252526;
---panel-bg:#2d2d2d;
+--bg:#1e1e1e;
+--sidebar:#252526;
+--panel:#2d2d2d;
 --border:#2d2d2d;
 --text:#d4d4d4;
---muted:#858585;
+--muted:#888;
 --active:#094771;
 --accent:#007acc;
 }
@@ -24,7 +24,7 @@
 body{
 margin:0;
 font-family:Consolas,monospace;
-background:var(--editor-bg);
+background:var(--bg);
 color:var(--text);
 height:100vh;
 overflow:hidden;
@@ -38,89 +38,53 @@ flex-direction:column;
 align-items:center;
 padding-top:10px;
 }
-.activity div{
-margin:12px 0;
-opacity:.6;
-font-size:18px;
-}
+.activity div{margin:12px 0;opacity:.6;font-size:18px}
 .activity .active{opacity:1;color:var(--accent)}
 .sidebar{
 width:260px;
-background:var(--sidebar-bg);
+background:var(--sidebar);
 border-right:1px solid var(--border);
 overflow:auto;
-transition:transform .25s ease;
+transition:.25s;
 }
 .sidebar.hidden{transform:translateX(-260px)}
-.sidebar h3{
-margin:10px;
-font-size:12px;
-color:var(--muted);
-}
-.tree-item{
-padding:6px 14px;
-font-size:14px;
-cursor:pointer;
-user-select:none;
-}
+.sidebar h3{margin:10px;font-size:12px;color:var(--muted)}
+.tree-item{padding:6px 14px;cursor:pointer;user-select:none}
 .tree-item:active{background:#2a2d2e}
-.tree-file.active{
-background:var(--active);
-color:white;
-}
+.tree-file.active{background:var(--active);color:white}
 .folder{font-weight:bold}
 .children{margin-left:12px;display:none}
-.main{
-flex:1;
-display:flex;
-flex-direction:column;
-min-width:0;
-}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
 .topbar{
-height:34px;
-background:var(--panel-bg);
+height:36px;
+background:var(--panel);
 border-bottom:1px solid var(--border);
 display:flex;
 align-items:center;
 }
-.menu-btn{
-width:40px;
-text-align:center;
-cursor:pointer;
-font-size:18px;
-}
-.tabs{
-flex:1;
-display:flex;
-overflow-x:auto;
-}
-.tab{
-padding:6px 14px;
-font-size:13px;
-background:var(--panel-bg);
-margin-right:2px;
-white-space:nowrap;
-}
-.tab.active{background:var(--editor-bg)}
-.actions{
-display:flex;
-gap:6px;
-padding-right:6px;
-}
-.actions button{
+.menu-btn{width:40px;text-align:center;cursor:pointer;font-size:18px}
+.filebar{display:flex;gap:6px;padding:0 6px}
+.filebar button{
 background:#3c3c3c;
-border:none;
-color:white;
-font-size:11px;
-padding:4px 8px;
+border:1px solid #2d2d2d;
+color:#d4d4d4;
+font-size:12px;
+padding:4px 10px;
 }
-.editor-wrap{flex:1;min-height:0}
+.filebar button.active{background:var(--active)}
+.tabs{flex:1;display:flex;overflow-x:auto}
+.tab{padding:6px 14px;font-size:13px;background:var(--panel);margin-right:2px;white-space:nowrap;cursor:pointer}
+.tab.active{background:var(--bg)}
+.editor-area{flex:1;display:flex;min-height:0}
+.editor-wrap{flex:1;min-width:0}
 #editor{height:100%}
-.terminal{
-height:160px;
-background:#000;
-border-top:1px solid var(--border);
+.preview{
+width:40%;
+border-left:1px solid var(--border);
+background:white;
 }
+.preview iframe{width:100%;height:100%;border:none}
+.terminal{height:160px;background:#000;border-top:1px solid var(--border)}
 .status{
 height:22px;
 background:var(--accent);
@@ -133,6 +97,8 @@ padding:0 10px;
 }
 @media(max-width:900px){
 .sidebar{position:absolute;z-index:5;height:100%}
+.preview{display:none}
+.editor-wrap{width:100%}
 }
 </style>
 </head>
@@ -155,16 +121,19 @@ padding:0 10px;
 <div class="main">
 <div class="topbar">
 <div class="menu-btn" id="menu">☰</div>
-<div class="tabs" id="tabs"></div>
-<div class="actions">
-<button id="save">SAVE</button>
-<button id="load">LOAD</button>
-<button id="reset">RESET</button>
+<div class="filebar">
+<button id="saveFile">Save</button>
+<button id="saveWS">Save WS</button>
+<button id="loadWS">Load WS</button>
+<button id="resetWS">Reset</button>
+<button id="toggleView" style="display:none">PREVIEW</button>
 </div>
+<div class="tabs" id="tabs"></div>
 </div>
 
-<div class="editor-wrap">
-<div id="editor"></div>
+<div class="editor-area">
+<div class="editor-wrap" id="editorWrap"><div id="editor"></div></div>
+<div class="preview" id="preview"><iframe id="iframe"></iframe></div>
 </div>
 
 <div class="terminal" id="terminal"></div>
@@ -180,47 +149,26 @@ padding:0 10px;
 
 <script>
 const FILE_TREE={
-src:{
-type:"folder",
-children:{
-"about_me.md":{
-type:"file",
-language:"markdown",
-content:"# FarizGD\n\nGeometry Dash player\nRandom tech enjoyer"
-},
-"farizgd.js":{
-type:"file",
-language:"javascript",
-content:"console.log('Hello VS Code Web');"
-}
-}
-},
-"skills.json":{
-type:"file",
-language:"json",
-content:'{ "languages": ["Node.js","Python","VB.NET"] }'
-},
-"contact.sh":{
-type:"file",
-language:"shell",
-content:"echo Hello World"
-}
+src:{type:"folder",children:{
+"index.html":{type:"file",language:"html",content:"<!DOCTYPE html><html><body><h1>Hello Mobile Preview</h1></body></html>"},
+"main.js":{type:"file",language:"javascript",content:"console.log('Hello');"}
+}},
+"skills.json":{type:"file",language:"json",content:'{"skills":["Node","Python"]}'}
 }
 
-let editor
+let editor,currentPath="",currentFile=null,viewMode="code"
 const models={}
 const tabs=document.getElementById("tabs")
 const lang=document.getElementById("lang")
 const sidebar=document.getElementById("sidebar")
+const preview=document.getElementById("preview")
+const iframe=document.getElementById("iframe")
+const toggle=document.getElementById("toggleView")
+const editorWrap=document.getElementById("editorWrap")
 
-document.getElementById("menu").onclick=()=>{
-sidebar.classList.toggle("hidden")
-}
+document.getElementById("menu").onclick=()=>sidebar.classList.toggle("hidden")
 
-require.config({
-paths:{vs:"https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs"}
-})
-
+require.config({paths:{vs:"https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs"}})
 require(["vs/editor/editor.main"],()=>{
 editor=monaco.editor.create(document.getElementById("editor"),{
 theme:"vs-dark",
@@ -236,6 +184,9 @@ const saved=localStorage.getItem("file:"+path)
 models[path]=monaco.editor.createModel(saved??file.content,file.language)
 models[path].onDidChangeContent(()=>{
 localStorage.setItem("file:"+path,models[path].getValue())
+if(file.language==="html"&&currentPath===path){
+iframe.srcdoc=models[path].getValue()
+}
 })
 }
 return models[path]
@@ -252,9 +203,9 @@ f.textContent="▸ "+name
 const c=document.createElement("div")
 c.className="children"
 f.onclick=()=>{
-const open=c.style.display==="block"
-c.style.display=open?"none":"block"
-f.textContent=(open?"▸ ":"▾ ")+name
+const o=c.style.display==="block"
+c.style.display=o?"none":"block"
+f.textContent=(o?"▸ ":"▾ ")+name
 }
 parent.appendChild(f)
 parent.appendChild(c)
@@ -273,6 +224,8 @@ parent.appendChild(f)
 }
 
 function openFile(name,file,path,el){
+currentPath=path
+currentFile=file
 const model=getModel(path,file)
 editor.setModel(model)
 lang.textContent=file.language.toUpperCase()
@@ -284,71 +237,56 @@ tab=document.createElement("div")
 tab.className="tab"
 tab.textContent=name
 tab.dataset.tab=path
-tab.onclick=()=>editor.setModel(models[path])
+tab.onclick=()=>openFile(name,file,path,el)
 tabs.appendChild(tab)
 }
-document.querySelectorAll(".tab").forEach(t=>{
-t.classList.toggle("active",t.dataset.tab===path)
-})
+document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===path))
+updateView()
 }
 
-document.getElementById("save").onclick=()=>{
+function updateView(){
+const mobile=window.innerWidth<900
+if(currentFile&&currentFile.language==="html"){
+toggle.style.display=mobile?"inline-block":"none"
+preview.style.display=mobile?(viewMode==="preview"?"block":"none"):"block"
+editorWrap.style.display=mobile?(viewMode==="code"?"block":"none"):"block"
+iframe.srcdoc=models[currentPath].getValue()
+toggle.textContent=viewMode==="code"?"PREVIEW":"CODE"
+}else{
+toggle.style.display="none"
+preview.style.display="none"
+editorWrap.style.display="block"
+}
+}
+
+toggle.onclick=()=>{
+viewMode=viewMode==="code"?"preview":"code"
+updateView()
+}
+
+window.onresize=updateView
+
+document.getElementById("saveFile").onclick=()=>editor.getModel()?.pushStackElement()
+document.getElementById("saveWS").onclick=()=>{
 const dump={}
 for(const k in models) dump[k]=models[k].getValue()
 localStorage.setItem("workspace",JSON.stringify(dump))
 }
-
-document.getElementById("load").onclick=()=>{
+document.getElementById("loadWS").onclick=()=>{
 const data=JSON.parse(localStorage.getItem("workspace")||"{}")
-for(const k in data){
-if(models[k]) models[k].setValue(data[k])
+for(const k in data){if(models[k]) models[k].setValue(data[k])}
 }
-}
-
-document.getElementById("reset").onclick=()=>{
-localStorage.clear()
-location.reload()
-}
+document.getElementById("resetWS").onclick=()=>{localStorage.clear();location.reload()}
 
 const term=new Terminal({cursorBlink:true,theme:{background:"#000"}})
 term.open(document.getElementById("terminal"))
-let buffer=""
+let buf=""
 term.write("> ")
 term.onData(e=>{
-if(e==="\r"){
-term.write("\r\n")
-runCmd(buffer)
-buffer=""
-term.write("> ")
-}else if(e==="\u007F"){
-if(buffer.length>0){
-buffer=buffer.slice(0,-1)
-term.write("\b \b")
-}
-}else{
-buffer+=e
-term.write(e)
-}
+if(e==="\r"){term.write("\r\n");buf="";term.write("> ")}
+else if(e==="\u007F"){if(buf.length){buf=buf.slice(0,-1);term.write("\b \b")}}
+else{buf+=e;term.write(e)}
 })
-
-function runCmd(cmd){
-cmd=cmd.trim()
-if(cmd==="help"){
-term.writeln("help clear echo save load")
-}else if(cmd==="clear"){
-term.clear()
-}else if(cmd==="save"){
-document.getElementById("save").click()
-term.writeln("workspace saved")
-}else if(cmd==="load"){
-document.getElementById("load").click()
-term.writeln("workspace loaded")
-}else if(cmd.startsWith("echo")){
-term.writeln(cmd.slice(5))
-}else{
-term.writeln("command not found")
-}
-}
 </script>
 
 </body>
