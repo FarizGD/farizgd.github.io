@@ -2,118 +2,125 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>FarizGD — VS Code Web</title>
+<title>VS Code Web</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- MONACO -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
-
-<!-- XTERM -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css">
 <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
 
 <style>
 :root{
-  --bg1:#2a2a2a;
-  --bg2:#0f0f0f;
-  --panel:#1e1e1e;
-  --panel2:#252526;
-  --border:#2d2d2d;
-  --text:#d4d4d4;
-  --muted:#888;
-  --accent:#007acc;
+--editor-bg:#1e1e1e;
+--sidebar-bg:#252526;
+--panel-bg:#2d2d2d;
+--border:#2d2d2d;
+--text:#d4d4d4;
+--muted:#858585;
+--active:#094771;
+--accent:#007acc;
 }
-
 *{box-sizing:border-box}
-
 body{
-  margin:0;
-  font-family:Consolas, monospace;
-  background:linear-gradient(135deg,var(--bg1),var(--bg2));
-  height:100vh;
-  overflow:hidden;
+margin:0;
+font-family:Consolas,monospace;
+background:var(--editor-bg);
+color:var(--text);
+height:100vh;
+overflow:hidden;
 }
-
 .app{display:flex;height:100%}
-
-/* ACTIVITY BAR */
 .activity{
-  width:48px;
-  background:#333;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  padding-top:10px;
+width:48px;
+background:#333;
+display:flex;
+flex-direction:column;
+align-items:center;
+padding-top:10px;
 }
-.activity i{margin:12px 0;opacity:.6}
-.activity i.active{opacity:1;color:var(--accent)}
-
-/* SIDEBAR */
+.activity div{
+margin:12px 0;
+opacity:.6;
+font-size:18px;
+}
+.activity .active{opacity:1;color:var(--accent)}
 .sidebar{
-  width:260px;
-  background:var(--panel2);
-  border-right:1px solid var(--border);
-  overflow:auto;
+width:260px;
+background:var(--sidebar-bg);
+border-right:1px solid var(--border);
+overflow:auto;
+transition:transform .25s ease;
 }
+.sidebar.hidden{transform:translateX(-260px)}
 .sidebar h3{
-  margin:10px;
-  font-size:12px;
-  color:var(--muted);
+margin:10px;
+font-size:12px;
+color:var(--muted);
 }
-
 .tree-item{
-  padding:4px 12px;
-  cursor:pointer;
-  font-size:13px;
+padding:6px 14px;
+font-size:14px;
+cursor:pointer;
+user-select:none;
 }
-.tree-item:hover{background:#2a2d2e}
-.tree-file.active{background:#094771;color:white}
-
+.tree-item:active{background:#2a2d2e}
+.tree-file.active{
+background:var(--active);
+color:white;
+}
 .folder{font-weight:bold}
 .children{margin-left:12px;display:none}
-.folder.open + .children{display:block}
-
-/* MAIN */
-.main{flex:1;display:flex;flex-direction:column}
-
-/* TABS */
+.main{
+flex:1;
+display:flex;
+flex-direction:column;
+min-width:0;
+}
+.topbar{
+height:34px;
+background:var(--panel-bg);
+border-bottom:1px solid var(--border);
+display:flex;
+align-items:center;
+}
+.menu-btn{
+width:40px;
+text-align:center;
+cursor:pointer;
+font-size:18px;
+}
 .tabs{
-  height:34px;
-  background:#2d2d2d;
-  border-bottom:1px solid var(--border);
-  display:flex;
-  align-items:flex-end;
+flex:1;
+display:flex;
+overflow-x:auto;
 }
 .tab{
-  padding:6px 14px;
-  font-size:13px;
-  background:#2d2d2d;
-  margin-right:2px;
-  cursor:pointer;
+padding:6px 14px;
+font-size:13px;
+background:var(--panel-bg);
+margin-right:2px;
+white-space:nowrap;
 }
-.tab.active{background:var(--panel)}
-.tab span{margin-left:8px;color:#999}
-
-/* EDITOR + TERMINAL */
-.editor-wrap{flex:1;position:relative}
+.tab.active{background:var(--editor-bg)}
+.editor-wrap{flex:1;min-height:0}
 #editor{height:100%}
-
 .terminal{
-  height:180px;
-  background:#000;
-  border-top:1px solid var(--border);
+height:160px;
+background:#000;
+border-top:1px solid var(--border);
 }
-
-/* STATUS */
 .status{
-  height:22px;
-  background:#007acc;
-  color:white;
-  font-size:12px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:0 10px;
+height:22px;
+background:var(--accent);
+color:white;
+font-size:12px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:0 10px;
+}
+@media(max-width:900px){
+.sidebar{position:absolute;z-index:5;height:100%}
 }
 </style>
 </head>
@@ -122,160 +129,161 @@ body{
 
 <div class="app">
 
-  <!-- ACTIVITY BAR -->
-  <div class="activity">
-    <i class="active">📁</i>
-    <i>🔍</i>
-    <i>🐞</i>
-    <i>🧩</i>
-  </div>
+<div class="activity">
+<div class="active">▣</div>
+<div>⌕</div>
+<div>⚙</div>
+</div>
 
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <h3>EXPLORER</h3>
-    <div id="tree"></div>
-  </div>
+<div class="sidebar hidden" id="sidebar">
+<h3>EXPLORER</h3>
+<div id="tree"></div>
+</div>
 
-  <!-- MAIN -->
-  <div class="main">
-    <div class="tabs" id="tabs"></div>
+<div class="main">
+<div class="topbar">
+<div class="menu-btn" id="menu">☰</div>
+<div class="tabs" id="tabs"></div>
+</div>
 
-    <div class="editor-wrap">
-      <div id="editor"></div>
-    </div>
+<div class="editor-wrap">
+<div id="editor"></div>
+</div>
 
-    <div class="terminal" id="terminal"></div>
+<div class="terminal" id="terminal"></div>
 
-    <div class="status">
-      <span>UTF-8</span>
-      <span id="lang">Markdown</span>
-      <span>Ln 1, Col 1</span>
-    </div>
-  </div>
+<div class="status">
+<span>UTF-8</span>
+<span id="lang">PLAINTEXT</span>
+<span>Ln 1, Col 1</span>
+</div>
+</div>
 
 </div>
 
 <script>
-/* ===== FILE TREE (EDIT HERE) ===== */
-const FILE_TREE = {
-  src:{
-    type:"folder",
-    children:{
-      "about_me.md":{
-        type:"file",
-        language:"markdown",
-        content:"# FarizGD\n\nGeometry Dash player\nRandom tech enjoyer"
-      },
-      "farizgd.js":{
-        type:"file",
-        language:"javascript",
-        content:"console.log('Hello VS Code Web');"
-      }
-    }
-  },
-  "skills.json":{
-    type:"file",
-    language:"json",
-    content:'{"languages":["Node.js","Python","VB.NET"]}'
-  },
-  "contact.sh":{
-    type:"file",
-    language:"shell",
-    content:"echo Hello World"
-  }
-};
-/* ===== END ===== */
+const FILE_TREE={
+src:{
+type:"folder",
+children:{
+"about_me.md":{
+type:"file",
+language:"markdown",
+content:"# FarizGD\n\nGeometry Dash player\nRandom tech enjoyer"
+},
+"farizgd.js":{
+type:"file",
+language:"javascript",
+content:"console.log('Hello VS Code Web');"
+}
+}
+},
+"skills.json":{
+type:"file",
+language:"json",
+content:'{ "languages": ["Node.js","Python","VB.NET"] }'
+},
+"contact.sh":{
+type:"file",
+language:"shell",
+content:"echo Hello World"
+}
+}
 
-let editor, terminal;
-let openTabs = {};
-let currentFile = null;
+let editor
+const models={}
+const tabs=document.getElementById("tabs")
+const lang=document.getElementById("lang")
+const sidebar=document.getElementById("sidebar")
 
-require.config({ paths:{vs:"https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs"} });
+document.getElementById("menu").onclick=()=>{
+sidebar.classList.toggle("hidden")
+}
+
+require.config({
+paths:{vs:"https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs"}
+})
 
 require(["vs/editor/editor.main"],()=>{
-  editor = monaco.editor.create(document.getElementById("editor"),{
-    theme:"vs-dark",
-    automaticLayout:true,
-    fontSize:14
-  });
+editor=monaco.editor.create(document.getElementById("editor"),{
+theme:"vs-dark",
+automaticLayout:true,
+fontSize:14
+})
+buildTree(FILE_TREE,document.getElementById("tree"),"")
+})
 
-  editor.onDidChangeModelContent(()=>{
-    if(currentFile){
-      localStorage.setItem("file:"+currentFile.path, editor.getValue());
-    }
-  });
-
-  buildTree(FILE_TREE, document.getElementById("tree"), "");
-});
-
-/* TERMINAL */
-terminal = new Terminal({theme:{background:"#000"}});
-terminal.open(document.getElementById("terminal"));
-terminal.writeln("FarizGD VS Code Web");
-terminal.writeln("type `help`");
-
-terminal.onData(d=>{
-  if(d.trim()==="help"){
-    terminal.writeln("\ncommands:\n help\n clear\n echo");
-  }
-  if(d.trim()==="clear"){
-    terminal.clear();
-  }
-});
-
-/* TREE */
-function buildTree(obj, parent, path){
-  for(const name in obj){
-    const item = obj[name];
-    if(item.type==="folder"){
-      const f=document.createElement("div");
-      f.className="tree-item folder";
-      f.textContent="📁 "+name;
-      parent.appendChild(f);
-
-      const c=document.createElement("div");
-      c.className="children";
-      parent.appendChild(c);
-
-      f.onclick=()=>f.classList.toggle("open");
-      buildTree(item.children, c, path+"/"+name);
-    }else{
-      const f=document.createElement("div");
-      f.className="tree-item tree-file";
-      f.textContent="📄 "+name;
-      f.onclick=()=>openFile(name, item, path+"/"+name);
-      parent.appendChild(f);
-    }
-  }
+function getModel(path,file){
+if(!models[path]){
+const saved=localStorage.getItem("file:"+path)
+models[path]=monaco.editor.createModel(saved??file.content,file.language)
+models[path].onDidChangeContent(()=>{
+localStorage.setItem("file:"+path,models[path].getValue())
+})
+}
+return models[path]
 }
 
-/* OPEN FILE */
-function openFile(name, file, path){
-  if(!openTabs[path]){
-    openTabs[path]=file;
-    const t=document.createElement("div");
-    t.className="tab";
-    t.textContent=name;
-    t.onclick=()=>loadFile(path,file);
-    document.getElementById("tabs").appendChild(t);
-    t.dataset.path=path;
-  }
-  loadFile(path,file);
+function buildTree(obj,parent,path){
+for(const name in obj){
+const item=obj[name]
+const full=path+"/"+name
+if(item.type==="folder"){
+const f=document.createElement("div")
+f.className="tree-item folder"
+f.textContent="▸ "+name
+const c=document.createElement("div")
+c.className="children"
+f.onclick=()=>{
+const open=c.style.display==="block"
+c.style.display=open?"none":"block"
+f.textContent=(open?"▸ ":"▾ ")+name
+}
+parent.appendChild(f)
+parent.appendChild(c)
+buildTree(item.children,c,full)
+}else{
+const f=document.createElement("div")
+f.className="tree-item tree-file"
+f.textContent="▪ "+name
+f.onclick=()=>{
+openFile(name,item,full,f)
+sidebar.classList.add("hidden")
+}
+parent.appendChild(f)
+}
+}
 }
 
-function loadFile(path,file){
-  currentFile={path,file};
-  const saved=localStorage.getItem("file:"+path);
-  editor.setModel(monaco.editor.createModel(
-    saved ?? file.content,
-    file.language
-  ));
-  document.getElementById("lang").textContent=file.language.toUpperCase();
-
-  document.querySelectorAll(".tab").forEach(t=>{
-    t.classList.toggle("active",t.dataset.path===path);
-  });
+function openFile(name,file,path,el){
+const model=getModel(path,file)
+editor.setModel(model)
+lang.textContent=file.language.toUpperCase()
+document.querySelectorAll(".tree-file").forEach(x=>x.classList.remove("active"))
+el.classList.add("active")
+let tab=document.querySelector(`[data-tab="${path}"]`)
+if(!tab){
+tab=document.createElement("div")
+tab.className="tab"
+tab.textContent=name
+tab.dataset.tab=path
+tab.onclick=()=>editor.setModel(models[path])
+tabs.appendChild(tab)
 }
+document.querySelectorAll(".tab").forEach(t=>{
+t.classList.toggle("active",t.dataset.tab===path)
+})
+}
+
+const term=new Terminal({theme:{background:"#000"}})
+term.open(document.getElementById("terminal"))
+term.writeln("VS Code Web Ready")
+term.onData(d=>{
+const cmd=d.trim()
+if(cmd==="clear"){term.clear()}
+else if(cmd.startsWith("echo")){term.writeln(cmd.slice(5))}
+else{term.writeln("unknown command")}
+})
 </script>
 
 </body>
