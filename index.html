@@ -2,122 +2,50 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Fariz WebServer</title>
+<title>VS Code Web</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css">
 <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
-
 <style>
-:root{
---bg:#1e1e1e;
---sidebar:#252526;
---panel:#2d2d2d;
---border:#2d2d2d;
---text:#d4d4d4;
---muted:#888;
---active:#094771;
---accent:#007acc;
-}
+:root{--bg:#1e1e1e;--sidebar:#252526;--panel:#2d2d2d;--border:#2d2d2d;--text:#d4d4d4;--muted:#888;--active:#094771;--accent:#007acc}
 *{box-sizing:border-box}
-body{
-margin:0;
-font-family:Consolas,monospace;
-background:var(--bg);
-color:var(--text);
-height:100vh;
-overflow:hidden;
-}
+body{margin:0;font-family:Consolas,monospace;background:var(--bg);color:var(--text);height:100vh;overflow:hidden}
 .app{display:flex;height:100%}
-.activity{
-width:48px;
-background:#333;
-display:flex;
-flex-direction:column;
-align-items:center;
-padding-top:10px;
-}
+.activity{width:48px;background:#333;display:flex;flex-direction:column;align-items:center;padding-top:10px}
 .activity div{margin:12px 0;opacity:.6;font-size:18px}
 .activity .active{opacity:1;color:var(--accent)}
-.sidebar{
-width:260px;
-background:var(--sidebar);
-border-right:1px solid var(--border);
-overflow:auto;
-transition:.25s;
-}
+.sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);overflow:auto;position:absolute;height:100%;z-index:5;transition:.25s}
 .sidebar.hidden{transform:translateX(-260px)}
 .sidebar h3{margin:10px;font-size:12px;color:var(--muted)}
-.tree-item{padding:6px 14px;cursor:pointer;user-select:none}
-.tree-item:active{background:#2a2d2e}
+.tree-item{padding:6px 14px;cursor:pointer}
 .tree-file.active{background:var(--active);color:white}
 .folder{font-weight:bold}
 .children{margin-left:12px;display:none}
 .main{flex:1;display:flex;flex-direction:column;min-width:0}
-.topbar{
-height:36px;
-background:var(--panel);
-border-bottom:1px solid var(--border);
-display:flex;
-align-items:center;
-}
-.menu-btn{width:40px;text-align:center;cursor:pointer;font-size:18px}
-.filebar{display:flex;gap:6px;padding:0 6px}
-.filebar button{
-background:#3c3c3c;
-border:1px solid #2d2d2d;
-color:#d4d4d4;
-font-size:12px;
-padding:4px 10px;
-}
-.filebar button.active{background:var(--active)}
+.topbar{height:36px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center}
+.menu-btn{width:40px;text-align:center;font-size:18px;cursor:pointer}
+.filebar{display:flex;gap:6px;padding:0 6px;overflow-x:auto}
+.filebar button{background:#3c3c3c;border:1px solid #2d2d2d;color:#d4d4d4;font-size:12px;padding:4px 10px}
 .tabs{flex:1;display:flex;overflow-x:auto}
-.tab{padding:6px 14px;font-size:13px;background:var(--panel);margin-right:2px;white-space:nowrap;cursor:pointer}
+.tab{padding:6px 14px;font-size:13px;background:var(--panel);margin-right:2px;cursor:pointer}
 .tab.active{background:var(--bg)}
-.editor-area{
-flex:1;
-display:flex;
-min-height:0;
-}
-.editor-wrap{
-flex:1 1 60%;
-min-width:0;
-}
+.editor-area{flex:1;display:flex;min-height:0}
+.editor-wrap{flex:1 1 60%;min-width:0}
 #editor{height:100%}
-.divider{
-width:4px;
-cursor:col-resize;
-background:var(--border);
-}
-.preview{
-flex:1 1 40%;
-min-width:0;
-background:white;
-}
+.divider{width:4px;cursor:col-resize;background:var(--border)}
+.preview{flex:1 1 40%;min-width:0;background:white}
 .preview iframe{width:100%;height:100%;border:none}
-.terminal{height:160px;background:#000;border-top:1px solid var(--border)}
-.status{
-height:22px;
-background:var(--accent);
-color:white;
-font-size:12px;
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:0 10px;
-}
+.terminal{height:150px;background:#000;border-top:1px solid var(--border)}
+.status{height:22px;background:var(--accent);color:white;font-size:12px;display:flex;justify-content:space-between;align-items:center;padding:0 10px}
 @media(max-width:900px){
-.sidebar{position:absolute;z-index:5;height:100%}
 .editor-area{flex-direction:column}
-.divider{display:none}
-.preview{display:none}
+.preview,.divider{display:none}
 }
 </style>
 </head>
 
 <body>
-
 <div class="app">
 
 <div class="activity">
@@ -135,197 +63,110 @@ padding:0 10px;
 <div class="topbar">
 <div class="menu-btn" id="menu">☰</div>
 <div class="filebar">
+<button id="upload">Upload</button>
+<button id="download">Download</button>
 <button id="saveWS">Save WS</button>
 <button id="loadWS">Load WS</button>
 <button id="resetWS">Reset</button>
-<button id="toggleView" style="display:none">PREVIEW</button>
 </div>
 <div class="tabs" id="tabs"></div>
 </div>
 
 <div class="editor-area">
-<div class="editor-wrap" id="editorWrap"><div id="editor"></div></div>
+<div class="editor-wrap"><div id="editor"></div></div>
 <div class="divider" id="divider"></div>
-<div class="preview" id="preview"><iframe id="iframe"></iframe></div>
+<div class="preview"><iframe id="iframe"></iframe></div>
 </div>
 
 <div class="terminal" id="terminal"></div>
-
-<div class="status">
-<span>UTF-8</span>
-<span id="lang">PLAINTEXT</span>
-<span>READY</span>
+<div class="status"><span>UTF-8</span><span id="lang">READY</span><span>OK</span></div>
 </div>
 </div>
 
-</div>
+<input type="file" id="fileInput" hidden>
 
 <script>
-const FILE_TREE={
-src:{type:"folder",children:{
-"index.html":{type:"file",language:"html",content:"<!DOCTYPE html><html><body><h1>Hello Preview</h1></body></html>
-  test
-  text
-  
-"},
-"main.js":{type:"file",language:"javascript",content:"console.log('Hello');"}
-}},
-"skills.json":{type:"file",language:"json",content:'{"skills":["Node","Python"]}'}
-}
+const FILE_TREE={"index.html":{type:"file",language:"html",content:"<!DOCTYPE html><html><body><h1>Hello</h1></body></html>"}}
+let editor,currentPath="",currentFile=null
+const models={},tree=document.getElementById("tree"),tabs=document.getElementById("tabs"),iframe=document.getElementById("iframe")
 
-let editor,currentPath="",currentFile=null,viewMode="code"
-const models={}
-const tabs=document.getElementById("tabs")
-const lang=document.getElementById("lang")
-const sidebar=document.getElementById("sidebar")
-const preview=document.getElementById("preview")
-const iframe=document.getElementById("iframe")
-const toggle=document.getElementById("toggleView")
-const editorWrap=document.getElementById("editorWrap")
-const divider=document.getElementById("divider")
-
-document.getElementById("menu").onclick=()=>sidebar.classList.toggle("hidden")
+document.getElementById("menu").onclick=()=>document.getElementById("sidebar").classList.toggle("hidden")
 
 require.config({paths:{vs:"https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs"}})
 require(["vs/editor/editor.main"],()=>{
-editor=monaco.editor.create(document.getElementById("editor"),{
-theme:"vs-dark",
-automaticLayout:true,
-fontSize:14
-})
-buildTree(FILE_TREE,document.getElementById("tree"),"")
+editor=monaco.editor.create(document.getElementById("editor"),{theme:"vs-dark",automaticLayout:true})
+buildTree(FILE_TREE,"")
 })
 
-function getModel(path,file){
-if(!models[path]){
-const saved=localStorage.getItem("file:"+path)
-models[path]=monaco.editor.createModel(saved??file.content,file.language)
-models[path].onDidChangeContent(()=>{
-localStorage.setItem("file:"+path,models[path].getValue())
-if(file.language==="html"&&currentPath===path){
-iframe.srcdoc=models[path].getValue()
-}
-})
-}
-return models[path]
-}
-
-function buildTree(obj,parent,path){
+function buildTree(obj,path){
+tree.innerHTML=""
 for(const name in obj){
-const item=obj[name]
-const full=path+"/"+name
-if(item.type==="folder"){
-const f=document.createElement("div")
-f.className="tree-item folder"
-f.textContent="▸ "+name
-const c=document.createElement("div")
-c.className="children"
-f.onclick=()=>{
-const o=c.style.display==="block"
-c.style.display=o?"none":"block"
-f.textContent=(o?"▸ ":"▾ ")+name
-}
-parent.appendChild(f)
-parent.appendChild(c)
-buildTree(item.children,c,full)
-}else{
-const f=document.createElement("div")
-f.className="tree-item tree-file"
-f.textContent="▪ "+name
-f.onclick=()=>{
-openFile(name,item,full,f)
-sidebar.classList.add("hidden")
-}
-parent.appendChild(f)
-}
+const el=document.createElement("div")
+el.className="tree-item tree-file"
+el.textContent="▪ "+name
+el.onclick=()=>openFile(name,obj[name],"/"+name,el)
+tree.appendChild(el)
 }
 }
 
 function openFile(name,file,path,el){
 currentPath=path
 currentFile=file
-const model=getModel(path,file)
-editor.setModel(model)
-lang.textContent=file.language.toUpperCase()
+if(!models[path]){
+const saved=localStorage.getItem("file:"+path)
+models[path]=monaco.editor.createModel(saved??file.content,file.language)
+models[path].onDidChangeContent(()=>{localStorage.setItem("file:"+path,models[path].getValue());if(file.language==="html")iframe.srcdoc=models[path].getValue()})
+}
+editor.setModel(models[path])
 document.querySelectorAll(".tree-file").forEach(x=>x.classList.remove("active"))
 el.classList.add("active")
-let tab=document.querySelector(`[data-tab="${path}"]`)
-if(!tab){
-tab=document.createElement("div")
-tab.className="tab"
-tab.textContent=name
-tab.dataset.tab=path
-tab.onclick=()=>openFile(name,file,path,el)
-tabs.appendChild(tab)
-}
-document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===path))
-updateView()
+document.getElementById("lang").textContent=file.language.toUpperCase()
+iframe.srcdoc=models[path].getValue()
 }
 
-function updateView(){
-const mobile=window.innerWidth<900
-if(currentFile&&currentFile.language==="html"){
-toggle.style.display=mobile?"inline-block":"none"
-preview.style.display=mobile?(viewMode==="preview"?"block":"block"):"block"
-editorWrap.style.display=mobile?(viewMode==="code"?"block":"none"):"block"
-divider.style.display=mobile?"none":"block"
-iframe.srcdoc=models[currentPath].getValue()
-toggle.textContent=viewMode==="code"?"PREVIEW":"CODE"
-}else{
-toggle.style.display="none"
-preview.style.display="none"
-divider.style.display="none"
-editorWrap.style.display="block"
+document.getElementById("upload").onclick=()=>document.getElementById("fileInput").click()
+document.getElementById("fileInput").onchange=e=>{
+const f=e.target.files[0]
+if(!f)return
+const r=new FileReader()
+r.onload=()=>{
+const ext=f.name.split(".").pop()
+const lang={html:"html",js:"javascript",json:"json",css:"css"}[ext]||"plaintext"
+FILE_TREE[f.name]={type:"file",language:lang,content:r.result}
+buildTree(FILE_TREE,"")
 }
+r.readAsText(f)
 }
 
-toggle.onclick=()=>{
-viewMode=viewMode==="code"?"preview":"code"
-updateView()
+document.getElementById("download").onclick=()=>{
+if(!currentPath)return
+const blob=new Blob([models[currentPath].getValue()])
+const a=document.createElement("a")
+a.href=URL.createObjectURL(blob)
+a.download=currentPath.slice(1)
+a.click()
 }
-
-window.onresize=updateView
 
 document.getElementById("saveWS").onclick=()=>{
+try{
 const dump={}
-for(const k in models) dump[k]=models[k].getValue()
+for(const k in models)dump[k]=models[k].getValue()
 localStorage.setItem("workspace",JSON.stringify(dump))
+}catch{localStorage.clear()}
 }
+
 document.getElementById("loadWS").onclick=()=>{
-const data=JSON.parse(localStorage.getItem("workspace")||"{}")
-for(const k in data){if(models[k]) models[k].setValue(data[k])}
+try{
+const data=JSON.parse(localStorage.getItem("workspace"))
+for(const k in data)if(models[k])models[k].setValue(data[k])
+}catch{localStorage.clear();location.reload()}
 }
+
 document.getElementById("resetWS").onclick=()=>{localStorage.clear();location.reload()}
 
-let resizing=false
-divider.onmousedown=e=>{
-resizing=true
-document.body.style.cursor="col-resize"
-}
-window.onmouseup=()=>{
-resizing=false
-document.body.style.cursor=""
-}
-window.onmousemove=e=>{
-if(!resizing)return
-const rect=document.querySelector(".editor-area").getBoundingClientRect()
-let left=(e.clientX-rect.left)/rect.width*100
-left=Math.max(20,Math.min(80,left))
-editorWrap.style.flex=`0 0 ${left}%`
-preview.style.flex=`0 0 ${100-left}%`
-editor.layout()
-}
-
-const term=new Terminal({cursorBlink:true,theme:{background:"#000"}})
+const term=new Terminal({cursorBlink:true})
 term.open(document.getElementById("terminal"))
-let buf=""
-term.write("> ")
-term.onData(e=>{
-if(e==="\r"){term.write("\r\n");buf="";term.write("> ")}
-else if(e==="\u007F"){if(buf.length){buf=buf.slice(0,-1);term.write("\b \b")}}
-else{buf+=e;term.write(e)}
-})
+term.write("> ready\r\n")
 </script>
-
 </body>
 </html>
