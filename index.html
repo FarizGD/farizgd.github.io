@@ -13,23 +13,26 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:Consolas,monospace;height:100vh;overflow:hidden}
 .app{display:flex;height:100%}
+
 .activity{width:48px;background:#333;display:flex;flex-direction:column;align-items:center;padding-top:10px}
 .activity div{margin:12px 0;font-size:18px;opacity:.6}
 .activity .active{opacity:1;color:var(--accent)}
 
 .sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);overflow:auto;transition:.25s}
-.sidebar h3{font-size:12px;padding:10px;color:#888}
 .sidebar .item{padding:6px 14px;cursor:pointer}
 .sidebar .item.active{background:#094771;color:#fff}
 
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9}
+.explorer-header{display:flex;justify-content:space-between;align-items:center;padding:10px;font-size:12px;color:#888}
+.explorer-header button{background:none;border:none;color:#d4d4d4;font-size:18px;cursor:pointer;display:none}
+
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9}
 
 .main{flex:1;display:flex;flex-direction:column;min-width:0}
 .top{height:36px;background:var(--panel);display:flex;align-items:center;border-bottom:1px solid var(--border)}
 .btn{width:40px;text-align:center;cursor:pointer}
 .actions button{margin:0 4px;background:#3c3c3c;color:#fff;border:1px solid #2d2d2d;font-size:12px}
 
-.editor-area{flex:1;display:flex}
+.editor-area{flex:1;display:flex;min-height:0}
 #editor{flex:1}
 .preview{width:40%;background:#fff}
 .preview iframe{width:100%;height:100%;border:none}
@@ -47,6 +50,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Consolas,monosp
 .sidebar.open{left:0}
 .overlay.show{display:block}
 .preview{display:none}
+.explorer-header button{display:block}
 }
 </style>
 </head>
@@ -55,13 +59,17 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Consolas,monosp
 <div class="overlay" id="overlay"></div>
 
 <div class="app">
+
 <div class="activity">
 <div class="active">▣</div>
 <div id="extBtn">⧉</div>
 </div>
 
 <div class="sidebar" id="sidebar">
-<h3>EXPLORER</h3>
+<div class="explorer-header">
+<span>EXPLORER</span>
+<button id="closeSidebar">×</button>
+</div>
 <div class="item active" onclick="openFile()">index.html</div>
 </div>
 
@@ -76,11 +84,11 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Consolas,monosp
 
 <div class="editor-area">
 <div id="editor"></div>
-<div class="divider" id="div"></div>
+<div class="divider" id="divider"></div>
 <div class="preview"><iframe id="frame"></iframe></div>
 </div>
 
-<div class="bottom" id="term"></div>
+<div class="bottom" id="terminal"></div>
 <div class="status"><span>UTF-8</span><span id="info">READY</span><span>OK</span></div>
 </div>
 
@@ -89,22 +97,25 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Consolas,monosp
 <div class="ext"><span>Word Count</span><input type="checkbox" onchange="toggleExt('word',this.checked)"></div>
 <div class="ext"><span>Auto Preview</span><input type="checkbox" onchange="toggleExt('preview',this.checked)" checked></div>
 </div>
+
 </div>
 
 <script>
 let editor,model
 require.config({paths:{vs:"https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs"}})
 require(["vs/editor/editor.main"],()=>{
-model=monaco.editor.createModel(localStorage.getItem("file")||"<h1>Hello</h1>","html")
+model=monaco.editor.createModel(localStorage.getItem("file")||"<h1>Hello VS Code Web</h1>","html")
 editor=monaco.editor.create(document.getElementById("editor"),{model,theme:"vs-dark",automaticLayout:true})
-model.onDidChangeContent(()=>{localStorage.setItem("file",model.getValue());if(ext.preview)frame.srcdoc=model.getValue()})
+model.onDidChangeContent(()=>{
+localStorage.setItem("file",model.getValue())
+if(ext.preview)frame.srcdoc=model.getValue()
+if(ext.word)info.textContent=model.getValue().split(/\s+/).length+" words"
+})
 frame.srcdoc=model.getValue()
 })
 
 const ext={word:false,preview:true}
-
-function toggleExt(n,v){ext[n]=v;if(n==="word")updateWord()}
-function updateWord(){if(ext.word)document.getElementById("info").textContent=model.getValue().split(/\s+/).length+" words";else document.getElementById("info").textContent="READY"}
+function toggleExt(n,v){ext[n]=v;if(!v&&n==="word")info.textContent="READY"}
 
 function openFile(){}
 
@@ -112,19 +123,20 @@ function saveWS(){localStorage.setItem("ws",model.getValue())}
 function loadWS(){model.setValue(localStorage.getItem("ws")||model.getValue())}
 
 const term=new Terminal()
-term.open(document.getElementById("term"))
+term.open(document.getElementById("terminal"))
 term.write("> ready\r\n")
 
 const sidebar=document.getElementById("sidebar")
 const overlay=document.getElementById("overlay")
 menu.onclick=()=>{sidebar.classList.add("open");overlay.classList.add("show")}
-overlay.onclick=()=>{sidebar.classList.remove("open");overlay.classList.remove("show")}
+overlay.onclick=closeSide
+closeSidebar.onclick=closeSide
+function closeSide(){sidebar.classList.remove("open");overlay.classList.remove("show")}
 
-const extPanel=document.getElementById("extPanel")
 extBtn.onclick=()=>extPanel.style.display=extPanel.style.display==="block"?"none":"block"
 
 let drag=false
-div.onmousedown=()=>drag=true
+divider.onmousedown=()=>drag=true
 window.onmouseup=()=>drag=false
 window.onmousemove=e=>{if(drag){preview.style.width=(window.innerWidth-e.clientX)+"px"}}
 </script>
