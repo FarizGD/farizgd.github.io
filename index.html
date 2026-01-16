@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <title>VS Code Web</title>
@@ -9,179 +9,124 @@
 <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
 
 <style>
-:root{--bg:#1e1e1e;--sidebar:#252526;--panel:#2d2d2d;--border:#2d2d2d;--text:#d4d4d4;--muted:#888;--active:#094771;--accent:#007acc}
+:root{--bg:#1e1e1e;--sidebar:#252526;--panel:#2d2d2d;--border:#2d2d2d;--text:#d4d4d4;--accent:#007acc}
 *{box-sizing:border-box}
-body{margin:0;font-family:Consolas,monospace;background:var(--bg);color:var(--text);height:100vh;overflow:hidden}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Consolas,monospace;height:100vh;overflow:hidden}
 .app{display:flex;height:100%}
 .activity{width:48px;background:#333;display:flex;flex-direction:column;align-items:center;padding-top:10px}
-.activity div{margin:12px 0;opacity:.6;font-size:18px}
+.activity div{margin:12px 0;font-size:18px;opacity:.6}
 .activity .active{opacity:1;color:var(--accent)}
-.sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);overflow:auto;transition:width .25s}
-.sidebar.hidden{width:0;overflow:hidden}
-.sidebar h3{margin:10px;font-size:12px;color:var(--muted)}
-.tree-item{padding:6px 14px;cursor:pointer;white-space:nowrap}
-.tree-file.active{background:var(--active);color:#fff}
+
+.sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);overflow:auto;transition:.25s}
+.sidebar h3{font-size:12px;padding:10px;color:#888}
+.sidebar .item{padding:6px 14px;cursor:pointer}
+.sidebar .item.active{background:#094771;color:#fff}
+
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9}
+
 .main{flex:1;display:flex;flex-direction:column;min-width:0}
-.topbar{height:36px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center}
-.menu-btn{width:40px;text-align:center;font-size:18px;cursor:pointer}
-.filebar{display:flex;gap:6px;padding:0 6px;overflow-x:auto}
-.filebar button{background:#3c3c3c;border:1px solid #2d2d2d;color:#d4d4d4;font-size:12px;padding:4px 10px}
-.tabs{flex:1;display:flex;overflow-x:auto}
-.tab{padding:6px 14px;font-size:13px;background:var(--panel);margin-right:2px;cursor:pointer}
-.tab.active{background:var(--bg)}
-.editor-area{flex:1;display:flex;min-height:0}
-.editor-wrap{flex:1 1 60%;min-width:0}
-#editor{height:100%}
-.divider{width:4px;cursor:col-resize;background:var(--border)}
-.preview{flex:1 1 40%;min-width:0;background:#fff}
+.top{height:36px;background:var(--panel);display:flex;align-items:center;border-bottom:1px solid var(--border)}
+.btn{width:40px;text-align:center;cursor:pointer}
+.actions button{margin:0 4px;background:#3c3c3c;color:#fff;border:1px solid #2d2d2d;font-size:12px}
+
+.editor-area{flex:1;display:flex}
+#editor{flex:1}
+.preview{width:40%;background:#fff}
 .preview iframe{width:100%;height:100%;border:none}
-.terminal{height:140px;background:#000;border-top:1px solid var(--border)}
-.status{height:22px;background:var(--accent);color:#fff;font-size:12px;display:flex;justify-content:space-between;align-items:center;padding:0 10px}
+.divider{width:4px;background:#2d2d2d;cursor:col-resize}
+
+.bottom{height:130px;background:#000;border-top:1px solid var(--border)}
+.status{height:22px;background:var(--accent);font-size:12px;display:flex;justify-content:space-between;padding:0 10px;color:#fff}
+
+.ext-panel{position:absolute;right:0;top:36px;width:260px;background:var(--sidebar);height:calc(100% - 36px);border-left:1px solid var(--border);display:none}
+.ext-panel h3{padding:10px;font-size:12px;color:#888}
+.ext{padding:6px 10px;display:flex;justify-content:space-between}
 
 @media(max-width:900px){
-.editor-area{flex-direction:column}
+.sidebar{position:fixed;left:-260px;top:0;bottom:0;z-index:10}
+.sidebar.open{left:0}
+.overlay.show{display:block}
 .preview{display:none}
-.divider{display:none}
-.sidebar{position:absolute;left:0;top:0;bottom:0;z-index:10}
 }
-
 </style>
 </head>
 
 <body>
-<div class="app">
+<div class="overlay" id="overlay"></div>
 
+<div class="app">
 <div class="activity">
 <div class="active">▣</div>
-<div>⌕</div>
-<div>⚙</div>
+<div id="extBtn">⧉</div>
 </div>
 
-<div class="sidebar hidden" id="sidebar">
+<div class="sidebar" id="sidebar">
 <h3>EXPLORER</h3>
-<div id="tree"></div>
+<div class="item active" onclick="openFile()">index.html</div>
 </div>
 
 <div class="main">
-<div class="topbar">
-<div class="menu-btn" id="menu">☰</div>
-<div class="filebar">
-<button id="upload">Upload</button>
-<button id="download">Download</button>
-<button id="saveWS">Save</button>
-<button id="loadWS">Load</button>
-<button id="resetWS">Reset</button>
+<div class="top">
+<div class="btn" id="menu">≡</div>
+<div class="actions">
+<button onclick="saveWS()">Save</button>
+<button onclick="loadWS()">Load</button>
 </div>
-<div class="tabs" id="tabs"></div>
 </div>
 
 <div class="editor-area">
-<div class="editor-wrap"><div id="editor"></div></div>
-<div class="divider" id="divider"></div>
-<div class="preview"><iframe id="iframe"></iframe></div>
+<div id="editor"></div>
+<div class="divider" id="div"></div>
+<div class="preview"><iframe id="frame"></iframe></div>
 </div>
 
-<div class="terminal" id="terminal"></div>
-<div class="status"><span>UTF-8</span><span id="lang">READY</span><span>OK</span></div>
-</div>
+<div class="bottom" id="term"></div>
+<div class="status"><span>UTF-8</span><span id="info">READY</span><span>OK</span></div>
 </div>
 
-<input type="file" id="fileInput" hidden>
+<div class="ext-panel" id="extPanel">
+<h3>EXTENSIONS</h3>
+<div class="ext"><span>Word Count</span><input type="checkbox" onchange="toggleExt('word',this.checked)"></div>
+<div class="ext"><span>Auto Preview</span><input type="checkbox" onchange="toggleExt('preview',this.checked)" checked></div>
+</div>
+</div>
 
 <script>
-const FILES={"index.html":{lang:"html",content:"<!DOCTYPE html><html><body><h1>Hello VS Code Web</h1></body></html>"}}
-let editor,models={},currentPath=""
-const tree=document.getElementById("tree")
-const tabs=document.getElementById("tabs")
-const iframe=document.getElementById("iframe")
-
-document.getElementById("menu").onclick=()=>document.getElementById("sidebar").classList.toggle("hidden")
-
+let editor,model
 require.config({paths:{vs:"https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs"}})
 require(["vs/editor/editor.main"],()=>{
-editor=monaco.editor.create(document.getElementById("editor"),{theme:"vs-dark",automaticLayout:true})
-loadFiles()
+model=monaco.editor.createModel(localStorage.getItem("file")||"<h1>Hello</h1>","html")
+editor=monaco.editor.create(document.getElementById("editor"),{model,theme:"vs-dark",automaticLayout:true})
+model.onDidChangeContent(()=>{localStorage.setItem("file",model.getValue());if(ext.preview)frame.srcdoc=model.getValue()})
+frame.srcdoc=model.getValue()
 })
 
-function loadFiles(){
-tree.innerHTML=""
-Object.keys(FILES).forEach(name=>{
-const el=document.createElement("div")
-el.className="tree-item tree-file"
-el.textContent="▪ "+name
-el.onclick=()=>openFile(name,el)
-tree.appendChild(el)
-})
-}
+const ext={word:false,preview:true}
 
-function openFile(name,el){
-currentPath=name
-if(!models[name]){
-const saved=localStorage.getItem("file:"+name)
-models[name]=monaco.editor.createModel(saved??FILES[name].content,FILES[name].lang)
-models[name].onDidChangeContent(()=>{
-localStorage.setItem("file:"+name,models[name].getValue())
-if(FILES[name].lang==="html")iframe.srcdoc=models[name].getValue()
-})
-}
-editor.setModel(models[name])
-document.querySelectorAll(".tree-file").forEach(x=>x.classList.remove("active"))
-el.classList.add("active")
-document.getElementById("lang").textContent=FILES[name].lang.toUpperCase()
-iframe.srcdoc=models[name].getValue()
-}
+function toggleExt(n,v){ext[n]=v;if(n==="word")updateWord()}
+function updateWord(){if(ext.word)document.getElementById("info").textContent=model.getValue().split(/\s+/).length+" words";else document.getElementById("info").textContent="READY"}
 
-document.getElementById("upload").onclick=()=>document.getElementById("fileInput").click()
-document.getElementById("fileInput").onchange=e=>{
-const f=e.target.files[0]
-if(!f)return
-const r=new FileReader()
-r.onload=()=>{
-const ext=f.name.split(".").pop()
-const lang={html:"html",js:"javascript",json:"json",css:"css"}[ext]||"plaintext"
-FILES[f.name]={lang,content:r.result}
-loadFiles()
-}
-r.readAsText(f)
-}
+function openFile(){}
 
-document.getElementById("download").onclick=()=>{
-if(!currentPath)return
-const blob=new Blob([models[currentPath].getValue()])
-const a=document.createElement("a")
-a.href=URL.createObjectURL(blob)
-a.download=currentPath
-a.click()
-}
+function saveWS(){localStorage.setItem("ws",model.getValue())}
+function loadWS(){model.setValue(localStorage.getItem("ws")||model.getValue())}
 
-document.getElementById("saveWS").onclick=()=>{
-const dump={}
-for(const k in models)dump[k]=models[k].getValue()
-localStorage.setItem("workspace",JSON.stringify(dump))
-}
-
-document.getElementById("loadWS").onclick=()=>{
-try{
-const data=JSON.parse(localStorage.getItem("workspace"))
-for(const k in data)if(models[k])models[k].setValue(data[k])
-}catch{localStorage.clear()}
-}
-
-document.getElementById("resetWS").onclick=()=>{localStorage.clear();location.reload()}
-
-const term=new Terminal({cursorBlink:true})
-term.open(document.getElementById("terminal"))
+const term=new Terminal()
+term.open(document.getElementById("term"))
 term.write("> ready\r\n")
 
-let resizing=false
-document.getElementById("divider").onmousedown=()=>resizing=true
-window.onmouseup=()=>resizing=false
-window.onmousemove=e=>{
-if(!resizing)return
-const p=e.clientX/window.innerWidth*100
-document.querySelector(".editor-wrap").style.flex=`1 1 ${p}%`
-document.querySelector(".preview").style.flex=`1 1 ${100-p}%`
-}
+const sidebar=document.getElementById("sidebar")
+const overlay=document.getElementById("overlay")
+menu.onclick=()=>{sidebar.classList.add("open");overlay.classList.add("show")}
+overlay.onclick=()=>{sidebar.classList.remove("open");overlay.classList.remove("show")}
+
+const extPanel=document.getElementById("extPanel")
+extBtn.onclick=()=>extPanel.style.display=extPanel.style.display==="block"?"none":"block"
+
+let drag=false
+div.onmousedown=()=>drag=true
+window.onmouseup=()=>drag=false
+window.onmousemove=e=>{if(drag){preview.style.width=(window.innerWidth-e.clientX)+"px"}}
 </script>
 </body>
 </html>
